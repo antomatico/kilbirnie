@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Tells phones/tablets to use their real screen width instead of pretending
+     to be a ~980px desktop. Without this the mobile layout never kicks in. -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- This line tells the browser to reload the page automatically. -->
+<meta http-equiv="refresh" content="30">
+<!-- Montserrat is the school's heading font (loaded from Google Fonts).
+     If the Pi is ever offline, the browser falls back to a system sans-serif. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+<title>Kilbirnie Bus Departures</title>
+<style>
+  /* clamp(MIN, FLUID, MAX) keeps text readable on a phone yet not silly-big
+     on a 4K monitor: it scales with the screen but is capped at both ends. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --pad-x: clamp(14px, 4vw, 64px); }
+  html, body { height: 100%; }
+  body {
+    background: #000000;
+    color: #e8eefc;
+    font-family: "Montserrat", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    display: flex; flex-direction: column;   /* header / board / footer stack */
+  }
+  header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    flex-wrap: wrap; gap: 0.4em;              /* wraps instead of overflowing */
+    padding: clamp(10px, 3vh, 32px) var(--pad-x) clamp(6px, 2vh, 20px);
+    border-bottom: 3px solid #69AAE2;
+  }
+  h1 { font-size: clamp(20px, 4.2vh, 46px); letter-spacing: 2px; color: #69AAE2; }
+  .clock { font-size: clamp(15px, 3.4vh, 34px); color: #7FA8C9; }
+  /* Three side-by-side stop panels on wide screens; they stack on narrow ones. */
+  .board {
+    flex: 1; overflow: auto;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: clamp(12px, 2vw, 30px);
+    padding: clamp(10px, 2vh, 22px) var(--pad-x);
+    align-content: start;
+  }
+  .stoppanel { min-width: 0; }
+  .stopname {
+    color: #69AAE2; font-size: clamp(15px, 2.6vh, 24px);
+    letter-spacing: 1px; padding-bottom: 0.3em; margin-bottom: 0.2em;
+    border-bottom: 2px solid #14283b;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: clamp(10px, 1.6vh, 15px); color: #5e83a3;
+    text-transform: uppercase; letter-spacing: 1px;
+    padding: 0.5em clamp(6px, 0.8vw, 14px); border-bottom: 1px solid #14283b;
+  }
+  td {
+    padding: clamp(7px, 1.4vh, 14px) clamp(6px, 0.8vw, 14px);
+    font-size: clamp(15px, 2.4vh, 30px); border-bottom: 1px solid #14283b;
+    vertical-align: middle;
+  }
+  .route {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 2.2em; height: 2.2em; box-sizing: border-box; padding: 0.1em;
+    background: #69AAE2; color: #000000; font-weight: bold;
+    border-radius: 50%;            /* makes each route number a circle */
+    font-size: 0.82em; line-height: 1;
+  }
+  .dest { color: #e8eefc; }
+  .mins { text-align: right; font-weight: bold; color: #9FD4FF; white-space: nowrap; }
+  .live::after {
+    content: "*"; color: #9FD4FF; margin-left: 0.3em; font-size: 0.6em;
+    vertical-align: super;
+  }
+  footer {
+    padding: clamp(8px, 1.4vh, 16px) var(--pad-x);
+    font-size: clamp(10px, 1.8vh, 17px); color: #5e83a3;
+    border-top: 1px solid #14283b;
+  }
+  /* Tablets and phones: stack the three stop panels into a single column. */
+  @media (max-width: 900px) {
+    .board { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    header { flex-direction: column; align-items: flex-start; }
+    .route { width: 2em; height: 2em; }
+  }
+  /* iPhone (and similar) in portrait, ~375-430px wide. The fluid sizes above
+     key off screen HEIGHT, and a phone in portrait is very tall, so text would
+     balloon. Here we pin fixed, sensible sizes and trim spacing so the three
+     columns fit with no sideways scrolling, and long names wrap cleanly. */
+  @media (max-width: 430px) {
+    :root { --pad-x: 12px; }
+    h1 { font-size: 21px; letter-spacing: 1px; }
+    .clock { font-size: 15px; }
+    th { font-size: 10px; }
+    td { font-size: 18px; }
+    .route { width: 1.9em; height: 1.9em; }
+    .dest { word-break: break-word; }
+    .mins { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>KILBIRNIE METLINK BUS DEPARTURES</h1>
+    <div class="clock">05:00:14</div>
+  </header>
+  <div class="board">
+    <section class="stoppanel"><h2 class="stopname">Kilbirnie - Stop A</h2><table><thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead><tbody><tr><td><span class="route" style="background:#005EB8;color:#FFFFFF;border:none">2</span></td><td class="dest">Miramar</td><td class="mins live">Due</td></tr><tr><td><span class="route" style="background:#5E9732;color:#FFFFFF;border:none">3</span></td><td class="dest">Lyall Bay</td><td class="mins live">1</td></tr><tr><td><span class="route" style="background:#005EB8;color:#FFFFFF;border:none">2</span></td><td class="dest">Seatoun</td><td class="mins live">3</td></tr><tr><td><span class="route" style="background:#BF5403;color:#FFFFFF;border:none">4</span></td><td class="dest">Strathmore Park</td><td class="mins">4</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">24</span></td><td class="dest">Miramar Heights</td><td class="mins live">6</td></tr><tr><td><span class="route" style="background:#5E9732;color:#FFFFFF;border:none">3</span></td><td class="dest">Rongotai</td><td class="mins live">8</td></tr><tr><td><span class="route" style="background:transparent;color:#636466;border:0.13em solid #636466">38x</span></td><td class="dest">Strathmore Park</td><td class="mins">9</td></tr><tr><td><span class="route" style="background:#8DC8E8;color:#FFFFFF;border:none">AX</span></td><td class="dest">Airport</td><td class="mins live">10</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">18</span></td><td class="dest">Karori</td><td class="mins live">12</td></tr><tr><td><span class="route" style="background:transparent;color:#636466;border:0.13em solid #636466">36</span></td><td class="dest">Lyall Bay</td><td class="mins">18</td></tr></tbody></table></section>
+<section class="stoppanel"><h2 class="stopname">Kilbirnie - Stop B</h2><table><thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead><tbody><tr><td><span class="route" style="background:#005EB8;color:#FFFFFF;border:none">2</span></td><td class="dest">Karori</td><td class="mins live">5</td></tr><tr><td><span class="route" style="background:#8DC8E8;color:#FFFFFF;border:none">AX</span></td><td class="dest">Wellington Station</td><td class="mins live">8</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">14</span></td><td class="dest">Wilton</td><td class="mins">12</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">24</span></td><td class="dest">Johnsonville</td><td class="mins">17</td></tr><tr><td><span class="route" style="background:transparent;color:#636466;border:0.13em solid #636466">36</span></td><td class="dest">Wellington Station</td><td class="mins live">20</td></tr></tbody></table></section>
+<section class="stoppanel"><h2 class="stopname">Kilbirnie - Stop C</h2><table><thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead><tbody><tr><td><span class="route" style="background:#BF5403;color:#FFFFFF;border:none">4</span></td><td class="dest">Mairangi</td><td class="mins live">4</td></tr><tr><td><span class="route" style="background:#5E9732;color:#FFFFFF;border:none">3</span></td><td class="dest">Wellington Station</td><td class="mins live">8</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">18</span></td><td class="dest">Karori</td><td class="mins live">22</td></tr></tbody></table></section>
+  </div>
+  <footer>* = live (real-time) &nbsp;&middot;&nbsp; Updated 05:00:14 &nbsp;&middot;&nbsp; Data: Metlink / Greater Wellington Regional Council (CC BY 4.0)</footer>
+</body>
+</html>

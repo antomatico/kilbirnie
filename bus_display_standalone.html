@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kilbirnie Bus Departures</title>
+
+<!-- Montserrat is the school's heading font. Falls back to a system sans-serif offline. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ---- School colours: black + sky blue #69AAE2 (navy #1D4263 as accent) ---- */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --pad-x: clamp(14px, 4vw, 64px); }
+  html, body { height: 100%; }
+  body {
+    background: #000000;
+    color: #e8eefc;
+    font-family: "Montserrat", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    flex-wrap: wrap; gap: 0.4em;
+    padding: clamp(10px, 3vh, 32px) var(--pad-x) clamp(6px, 2vh, 20px);
+    border-bottom: 3px solid #69AAE2;
+  }
+  h1 { font-size: clamp(20px, 4.2vh, 46px); letter-spacing: 2px; color: #69AAE2; }
+  .clock { font-size: clamp(15px, 3.4vh, 34px); color: #7FA8C9; }
+  .board { flex: 1; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: clamp(11px, 2vh, 18px); color: #5e83a3;
+    text-transform: uppercase; letter-spacing: 2px;
+    padding: clamp(8px, 1.6vh, 18px) var(--pad-x); border-bottom: 1px solid #14283b;
+  }
+  td {
+    padding: clamp(8px, 1.5vh, 18px) var(--pad-x);
+    font-size: clamp(17px, 3.4vh, 38px); border-bottom: 1px solid #14283b;
+  }
+  .route {
+    display: inline-block; min-width: 3.2em; text-align: center;
+    background: #69AAE2; color: #04243d; font-weight: bold;
+    border-radius: 8px; padding: 0.1em 0.3em;
+  }
+  .dest { color: #ffffff; }
+  .stop { color: #7FA8C9; font-size: clamp(13px, 2.6vh, 26px); }
+  .mins { text-align: right; font-weight: bold; color: #9FD4FF; white-space: nowrap; }
+  .live::after {
+    content: "*"; color: #9FD4FF; margin-left: 0.3em; font-size: 0.6em; vertical-align: super;
+  }
+  footer {
+    padding: clamp(8px, 1.4vh, 16px) var(--pad-x);
+    font-size: clamp(10px, 1.8vh, 17px); color: #5e83a3; border-top: 1px solid #14283b;
+  }
+  .msg { padding: 6vh var(--pad-x); color: #7FA8C9; font-size: clamp(15px, 2.6vh, 24px); }
+  .msg.error { color: #ff8a8a; }
+
+  /* Key-entry overlay shown when no API key is set yet. */
+  #keygate {
+    position: fixed; inset: 0; background: #000; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 1.2em; padding: var(--pad-x); text-align: center;
+  }
+  #keygate.show { display: flex; }
+  #keygate h2 { color: #69AAE2; font-size: clamp(18px, 4vh, 32px); }
+  #keygate p { color: #7FA8C9; max-width: 36em; font-size: clamp(13px, 2.2vh, 18px); line-height: 1.5; }
+  #keygate input {
+    width: min(90vw, 30em); padding: 0.7em 1em; font-size: 16px;
+    border-radius: 8px; border: 2px solid #69AAE2; background: #061522; color: #fff;
+    font-family: inherit;
+  }
+  #keygate button {
+    padding: 0.6em 1.6em; font-size: 16px; font-weight: bold; cursor: pointer;
+    border: none; border-radius: 8px; background: #69AAE2; color: #04243d; font-family: inherit;
+  }
+
+  /* iPhone / narrow portrait: stack header, hide Stop column, fixed sizes. */
+  @media (max-width: 600px) {
+    header { flex-direction: column; align-items: flex-start; }
+    .stop, .stop-h { display: none; }
+    .route { min-width: 2.6em; }
+  }
+  @media (max-width: 430px) {
+    :root { --pad-x: 12px; }
+    h1 { font-size: 21px; letter-spacing: 1px; }
+    .clock { font-size: 15px; }
+    th { font-size: 10px; }
+    td { font-size: 18px; }
+    .route { min-width: 2.4em; }
+    .dest { word-break: break-word; }
+    .mins { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <h1>KILBIRNIE DEPARTURES</h1>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <div class="board">
+    <table>
+      <thead>
+        <tr><th>Route</th><th>Destination</th><th class="stop-h">Stop</th><th style="text-align:right">Min</th></tr>
+      </thead>
+      <tbody id="rows">
+        <tr><td colspan="4" class="msg">Loading departures…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>* = live (real-time) &nbsp;&middot;&nbsp; <span id="updated">—</span> &nbsp;&middot;&nbsp; Data: Metlink / Greater Wellington Regional Council (CC BY 4.0)</footer>
+
+  <!-- Shown only if no API key has been entered yet. -->
+  <div id="keygate">
+    <h2>Enter your Metlink API key</h2>
+    <p>Get a free key from opendata.metlink.org.nz (it's on your dashboard after you log in).
+       It is stored only in this browser on this device. Keep this file private — anyone who opens it can read the key.</p>
+    <input id="keyinput" type="text" placeholder="paste your API key here" autocomplete="off">
+    <button id="keysave">Save &amp; start</button>
+  </div>
+
+<script>
+"use strict";
+
+/* ============================ CONFIG ============================ */
+/* OPTION 1: paste your key between the quotes below and you're done.
+   OPTION 2: leave it blank — the page will ask for it and remember it
+   in this browser. Either way, keep this file private (the key is in it). */
+const API_KEY = "";
+
+/* Our three Kilbirnie stops. The label is just for our display. */
+const STOPS = {
+  "6224": "Kilbirnie - Stop A",
+  "7224": "Kilbirnie - Stop B",
+  "7026": "Kilbirnie - Stop C"
+};
+
+const REFRESH_SECONDS = 30;            // how often to re-fetch
+const MAX_ROWS = 12;                   // how many buses to show
+const BASE = "https://api.opendata.metlink.org.nz/v1/stop-predictions";
+/* ================================================================ */
+
+
+/* Work out which key to use: the one typed in CONFIG, or one the user
+   previously entered and we saved in this browser. */
+function getKey() {
+  return API_KEY || localStorage.getItem("metlink_api_key") || "";
+}
+
+/* Turn an ISO time like "2026-05-20T14:32:00+12:00" into whole minutes from now. */
+function minutesUntil(ts) {
+  if (!ts) return null;
+  const when = new Date(ts);
+  if (isNaN(when)) return null;
+  const diff = (when - new Date()) / 60000;
+  return Math.max(0, Math.round(diff));
+}
+
+/* Ask Metlink about one stop. Returns its departures array (or [] on trouble). */
+async function fetchStop(stopId, key) {
+  const res = await fetch(`${BASE}?stop_id=${stopId}`, {
+    headers: { "x-api-key": key, "accept": "application/json" }
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for stop ${stopId}`);
+  const data = await res.json();
+  return data.departures || [];
+}
+
+/* Escape text so a bus name with < & > can't break the page. */
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+}
+
+/* Fetch every stop, combine, sort soonest-first, and draw the table. */
+async function refresh() {
+  const key = getKey();
+  if (!key) { document.getElementById("keygate").classList.add("show"); return; }
+
+  const tbody = document.getElementById("rows");
+  try {
+    const results = await Promise.all(
+      Object.keys(STOPS).map(id => fetchStop(id, key))
+    );
+
+    let rows = [];
+    Object.keys(STOPS).forEach((id, i) => {
+      results[i].forEach(dep => {
+        const times = dep.departure || {};
+        rows.push({
+          stop: STOPS[id],
+          route: String(dep.service_id != null ? dep.service_id : "?"),
+          dest: (dep.destination && dep.destination.name) || "Unknown",
+          mins: minutesUntil(times.expected || times.aimed),
+          live: !!times.expected
+        });
+      });
+    });
+
+    rows.sort((a, b) =>
+      (a.mins === null) - (b.mins === null) ||
+      (a.mins ?? 9999) - (b.mins ?? 9999)
+    );
+    rows = rows.slice(0, MAX_ROWS);
+
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="msg">No departures right now.</td></tr>';
+    } else {
+      tbody.innerHTML = rows.map(r => {
+        const mins = r.mins === null ? "--" : (r.mins === 0 ? "Due" : r.mins);
+        return `<tr>
+          <td><span class="route">${esc(r.route)}</span></td>
+          <td class="dest">${esc(r.dest)}</td>
+          <td class="stop">${esc(r.stop)}</td>
+          <td class="mins${r.live ? " live" : ""}">${mins}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    const now = new Date();
+    document.getElementById("updated").textContent =
+      "Updated " + now.toLocaleTimeString();
+  } catch (err) {
+    // Most likely causes: a wrong key (HTTP 403) or the browser blocking the
+    // request (CORS). Show it on screen so it's obvious what went wrong.
+    tbody.innerHTML = `<tr><td colspan="4" class="msg error">
+      Could not load departures: ${esc(err.message)}.<br>
+      If this says "Failed to fetch", Metlink may be blocking direct browser
+      requests (CORS) — in that case the Python version is the way to go.
+    </td></tr>`;
+  }
+}
+
+/* Tick the clock in the header every second (independent of data fetches). */
+function tickClock() {
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString();
+}
+
+/* Save a key the user typed into the overlay, then start. */
+document.getElementById("keysave").addEventListener("click", () => {
+  const v = document.getElementById("keyinput").value.trim();
+  if (!v) return;
+  localStorage.setItem("metlink_api_key", v);
+  document.getElementById("keygate").classList.remove("show");
+  refresh();
+});
+
+/* Start everything. */
+tickClock();
+setInterval(tickClock, 1000);
+refresh();
+setInterval(refresh, REFRESH_SECONDS * 1000);
+</script>
+</body>
+</html>
