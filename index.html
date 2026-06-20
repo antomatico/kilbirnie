@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EBIS Science Fair — Bus Display Project</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Alice&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Alice', serif;
+      background: #ffffff;
+      color: #222222;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #ffffff;
+      border-bottom: 3px solid #68AAE3;
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    header img {
+      height: 60px;
+      width: auto;
+    }
+
+    header .site-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #b0b0b0;
+    }
+
+    /* ── Hero banner ── */
+    .hero {
+      background: #68AAE3;
+      color: #ffffff;
+      text-align: center;
+      padding: 60px 40px 50px;
+    }
+
+    .hero h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 10px;
+    }
+
+    .hero p {
+      font-size: 1.05rem;
+      opacity: 0.9;
+      max-width: 560px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── Main content ── */
+    main {
+      flex: 1;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 60px 40px;
+      width: 100%;
+    }
+
+    .section-label {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #b0b0b0;
+      margin-bottom: 28px;
+    }
+
+    /* ── Card link ── */
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      border: 2px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 28px 32px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      border-color: #68AAE3;
+      box-shadow: 0 4px 20px rgba(104, 170, 227, 0.18);
+    }
+
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      background: #68AAE3;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-icon svg {
+      width: 26px;
+      height: 26px;
+      fill: #ffffff;
+    }
+
+    .card-text h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #222222;
+    }
+
+    .card-text p {
+      font-size: 0.9rem;
+      color: #888;
+      line-height: 1.5;
+    }
+
+    .card-arrow {
+      margin-left: auto;
+      color: #68AAE3;
+      font-size: 1.5rem;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 300;
+    }
+
+    /* ── About blurb ── */
+    .about {
+      margin-top: 48px;
+      padding-top: 40px;
+      border-top: 1px solid #eeeeee;
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+    }
+
+    .about img {
+      height: 80px;
+      width: auto;
+      opacity: 0.85;
+    }
+
+    .about-text p {
+      font-size: 0.9rem;
+      color: #666;
+      line-height: 1.7;
+    }
+
+    /* ── Footer ── */
+    footer {
+      background: #f7f7f7;
+      text-align: center;
+      padding: 24px 40px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: #b0b0b0;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://images.squarespace-cdn.com/content/v1/5bbea2e8c46f6d19d5d00c8e/1558840589603-SIYH4M1B0RET3YE5MR0I/EBIS+Logo+L+no+background.png"
+         alt="Evans Bay Intermediate School">
+    <span class="site-title">Evans Bay Intermediate School</span>
+  </header>
+
+  <div class="hero">
+    <h1>Bus Display — Science Fair Project</h1>
+    <p>A live departure board for Kilbirnie bus stops, built by EBIS students using the Metlink API.</p>
+  </div>
+
+  <main>
+    <p class="section-label">Project Files</p>
+
+    <a class="card" href="display_preview.html">
+      <div class="card-icon">
+        <!-- Bus icon -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78A3 3 0 0020 16V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm9 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM6 6h12v5H6V6z"/>
+        </svg>
+      </div>
+      <div class="card-text">
+        <h2>Bus Departure Display</h2>
+        <p>Live board showing upcoming departures from Kilbirnie stops A, B &amp; C — powered by Metlink.</p>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <div class="about">
+      <img src="https://images.squarespace-cdn.com/content/v1/5bbea2e8c46f6d19d5d00c8e/1563406768066-4OYJK4TGHFD5EFZCP6I7/EBIS+Waka+no+background.png"
+           alt="EBIS Waka">
+      <div class="about-text">
+        <p>This project was created for the EBIS Science Fair. It connects to the Metlink public API to fetch real-time departure data for bus stops near the school, and displays it on a monitor via iPhone screen casting.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Evans Bay Intermediate School &nbsp;·&nbsp; 14a Kemp St, Kilbirnie, Wellington &nbsp;·&nbsp; Ākonga Engaged on a Voyage of Success
+  </footer>
+
+</body>
+</html>
