@@ -484,7 +484,7 @@ document.getElementById("keysave").addEventListener("click", () => {
 
     for (let i = 0; i < 60; i++) {
       const angle  = (i / 60) * Math.PI * 2;
-      const isMai  = i % 5 === 0;
+      const isMaj  = i % 5 === 0;
       const outer  = R - 3;
       const inner  = isMaj ? R - 11 : R - 7;
       ctx.beginPath();
