@@ -5,8 +5,6 @@
 <!-- Kiosk mode: fix viewport to 1280px so AirPlay/screen-mirroring from a
      phone doesn't trigger mobile breakpoints. The TV sees a desktop layout. -->
 <meta name="viewport" content="width=1280, initial-scale=1, user-scalable=no">
-<!-- This line tells the browser to reload the page automatically. -->
-<meta http-equiv="refresh" content="30">
 <!-- Montserrat is the school's heading font (loaded from Google Fonts).
      If the Pi is ever offline, the browser falls back to a system sans-serif. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,7 +71,7 @@
     display: inline-flex; align-items: center; justify-content: center;
     width: 2.2em; height: 2.2em; box-sizing: border-box; padding: 0.1em;
     background: #69AAE2; color: #000000; font-weight: bold;
-    border-radius: 50%;            /* makes each route number a circle */
+    border-radius: 50%;
     font-size: 0.82em; line-height: 1;
   }
   .dest { color: #e8eefc; }
@@ -82,10 +80,32 @@
     content: "*"; color: #9FD4FF; margin-left: 0.3em; font-size: 0.6em;
     vertical-align: super;
   }
+  .msg { padding: 2em 0; color: #7FA8C9; font-size: clamp(13px, 1.8vh, 18px); }
+  .msg.error { color: #ff8a8a; }
   footer {
     padding: clamp(8px, 1.4vh, 16px) var(--pad-x);
     font-size: clamp(10px, 1.8vh, 17px); color: #5e83a3;
     border-top: 1px solid #14283b;
+  }
+
+  /* Key-entry overlay — only shown if no API key is set. */
+  #keygate {
+    position: fixed; inset: 0; background: #000;
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1.2em; padding: var(--pad-x); text-align: center;
+  }
+  #keygate.show { display: flex; }
+  #keygate h2 { color: #69AAE2; font-size: clamp(18px, 4vh, 32px); }
+  #keygate p  { color: #7FA8C9; max-width: 36em; font-size: clamp(13px, 2.2vh, 18px); line-height: 1.5; }
+  #keygate input {
+    width: min(90vw, 30em); padding: 0.7em 1em; font-size: 16px;
+    border-radius: 8px; border: 2px solid #69AAE2; background: #061522;
+    color: #fff; font-family: inherit;
+  }
+  #keygate button {
+    padding: 0.6em 1.6em; font-size: 16px; font-weight: bold; cursor: pointer;
+    border: none; border-radius: 8px; background: #69AAE2;
+    color: #04243d; font-family: inherit;
   }
   /* Kiosk display: always 3 columns, no mobile overrides.
      Viewport is pinned to 1280px so breakpoints below never fire via AirPlay. */
@@ -99,125 +119,260 @@
       <span class="clock-digital" id="digitalClock">00:00:00</span>
     </div>
   </header>
+
   <div class="board">
-    <section class="stoppanel"><h2 class="stopname">Kilbirnie - Stop A</h2><table><thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead><tbody><tr><td><span class="route" style="background:#005EB8;color:#FFFFFF;border:none">2</span></td><td class="dest">Miramar</td><td class="mins live">Due</td></tr><tr><td><span class="route" style="background:#5E9732;color:#FFFFFF;border:none">3</span></td><td class="dest">Lyall Bay</td><td class="mins live">1</td></tr><tr><td><span class="route" style="background:#005EB8;color:#FFFFFF;border:none">2</span></td><td class="dest">Seatoun</td><td class="mins live">3</td></tr><tr><td><span class="route" style="background:#BF5403;color:#FFFFFF;border:none">4</span></td><td class="dest">Strathmore Park</td><td class="mins">4</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">24</span></td><td class="dest">Miramar Heights</td><td class="mins live">6</td></tr><tr><td><span class="route" style="background:#5E9732;color:#FFFFFF;border:none">3</span></td><td class="dest">Rongotai</td><td class="mins live">8</td></tr><tr><td><span class="route" style="background:transparent;color:#636466;border:0.13em solid #636466">38x</span></td><td class="dest">Strathmore Park</td><td class="mins">9</td></tr><tr><td><span class="route" style="background:#8DC8E8;color:#FFFFFF;border:none">AX</span></td><td class="dest">Airport</td><td class="mins live">10</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">18</span></td><td class="dest">Karori</td><td class="mins live">12</td></tr><tr><td><span class="route" style="background:transparent;color:#636466;border:0.13em solid #636466">36</span></td><td class="dest">Lyall Bay</td><td class="mins">18</td></tr></tbody></table></section>
-<section class="stoppanel"><h2 class="stopname">Kilbirnie - Stop B</h2><table><thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead><tbody><tr><td><span class="route" style="background:#005EB8;color:#FFFFFF;border:none">2</span></td><td class="dest">Karori</td><td class="mins live">5</td></tr><tr><td><span class="route" style="background:#8DC8E8;color:#FFFFFF;border:none">AX</span></td><td class="dest">Wellington Station</td><td class="mins live">8</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">14</span></td><td class="dest">Wilton</td><td class="mins">12</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">24</span></td><td class="dest">Johnsonville</td><td class="mins">17</td></tr><tr><td><span class="route" style="background:transparent;color:#636466;border:0.13em solid #636466">36</span></td><td class="dest">Wellington Station</td><td class="mins live">20</td></tr></tbody></table></section>
-<section class="stoppanel"><h2 class="stopname">Kilbirnie - Stop C</h2><table><thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead><tbody><tr><td><span class="route" style="background:#BF5403;color:#FFFFFF;border:none">4</span></td><td class="dest">Mairangi</td><td class="mins live">4</td></tr><tr><td><span class="route" style="background:#5E9732;color:#FFFFFF;border:none">3</span></td><td class="dest">Wellington Station</td><td class="mins live">8</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">18</span></td><td class="dest">Karori</td><td class="mins live">22</td></tr></tbody></table></section>
+    <section class="stoppanel">
+      <h2 class="stopname">Kilbirnie - Stop A</h2>
+      <table>
+        <thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead>
+        <tbody id="rowsA"><tr><td colspan="3" class="msg">Loading…</td></tr></tbody>
+      </table>
+    </section>
+    <section class="stoppanel">
+      <h2 class="stopname">Kilbirnie - Stop B</h2>
+      <table>
+        <thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead>
+        <tbody id="rowsB"><tr><td colspan="3" class="msg">Loading…</td></tr></tbody>
+      </table>
+    </section>
+    <section class="stoppanel">
+      <h2 class="stopname">Kilbirnie - Stop C</h2>
+      <table>
+        <thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead>
+        <tbody id="rowsC"><tr><td colspan="3" class="msg">Loading…</td></tr></tbody>
+      </table>
+    </section>
   </div>
+
   <footer>* = live (real-time) &nbsp;&middot;&nbsp; Updated <span id="lastUpdated">--:--:--</span> &nbsp;&middot;&nbsp; Next refresh in <span id="countdown">30</span>s &nbsp;&middot;&nbsp; Data: Metlink / Greater Wellington Regional Council (CC BY 4.0)</footer>
+
+  <!-- Shown only if no API key is available. -->
+  <div id="keygate">
+    <h2>Enter your Metlink API key</h2>
+    <p>Get a free key from opendata.metlink.org.nz — it's on your dashboard after you log in.
+       It is stored only in this browser on this device.</p>
+    <input id="keyinput" type="text" placeholder="paste your API key here" autocomplete="off">
+    <button id="keysave">Save &amp; start</button>
+  </div>
+
 <script>
-  (function () {
-    const canvas  = document.getElementById('analogueClock');
-    const digital = document.getElementById('digitalClock');
-    const ctx     = canvas.getContext('2d');
-    const R       = 45; // radius (half of 90px)
-    const cx = R, cy = R;
+"use strict";
 
-    const FACE_BG    = '#0a0a0a';
-    const RIM        = '#69AAE2';
-    const TICK_MAJOR = '#69AAE2';
-    const TICK_MINOR = '#14283b';
-    const HAND_H     = '#e8eefc';
-    const HAND_M     = '#e8eefc';
-    const HAND_S     = '#9FD4FF';
-    const CENTER_DOT = '#69AAE2';
+/* ============================ CONFIG ============================ */
+const API_KEY = "Ej9kJpRHSk39jUOo4oZKARQCbHMNHwX4VP2EZzU4";
 
-    function drawClock() {
-      const now  = new Date();
-      const h    = now.getHours() % 12;
-      const m    = now.getMinutes();
-      const s    = now.getSeconds();
-      const ms   = now.getMilliseconds();
+const STOPS = {
+  "6224": "rowsA",
+  "7224": "rowsB",
+  "7026": "rowsC"
+};
 
-      // smooth second hand
-      const sAngle = ((s + ms / 1000) / 60) * Math.PI * 2 - Math.PI / 2;
-      const mAngle = ((m + s / 60) / 60) * Math.PI * 2 - Math.PI / 2;
-      const hAngle = ((h + m / 60) / 12) * Math.PI * 2 - Math.PI / 2;
+const REFRESH_SECONDS = 30;
+const MAX_ROWS = 10;
+const BASE = "https://api.opendata.metlink.org.nz/v1/stop-predictions";
+/* ================================================================ */
 
-      ctx.clearRect(0, 0, 90, 90);
 
-      // face
+/* Use the hardcoded key, or one saved by the user, or nothing. */
+function getKey() {
+  return API_KEY || localStorage.getItem("metlink_api_key") || "";
+}
+
+/* ISO timestamp → whole minutes from now (0 minimum). */
+function minutesUntil(ts) {
+  if (!ts) return null;
+  const when = new Date(ts);
+  if (isNaN(when)) return null;
+  return Math.max(0, Math.round((when - new Date()) / 60000));
+}
+
+/* Escape special HTML characters so destination names can't break the page. */
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+}
+
+/* Return the inline style for a route badge based on Wellington route colours. */
+function routeStyle(route) {
+  const solid = {
+    "2":  "background:#005EB8;color:#FFFFFF;border:none",
+    "3":  "background:#5E9732;color:#FFFFFF;border:none",
+    "4":  "background:#BF5403;color:#FFFFFF;border:none",
+    "AX": "background:#8DC8E8;color:#FFFFFF;border:none"
+  };
+  const outlined = {
+    "14": "background:transparent;color:#308AD9;border:0.13em solid #308AD9",
+    "18": "background:transparent;color:#308AD9;border:0.13em solid #308AD9",
+    "21": "background:transparent;color:#308AD9;border:0.13em solid #308AD9",
+    "24": "background:transparent;color:#308AD9;border:0.13em solid #308AD9",
+    "36": "background:transparent;color:#636466;border:0.13em solid #636466",
+    "38x":"background:transparent;color:#636466;border:0.13em solid #636466"
+  };
+  return solid[route] || outlined[route] ||
+    "background:transparent;color:#7FA8C9;border:0.13em solid #7FA8C9";
+}
+
+/* Fetch one stop and update its panel. */
+async function fetchAndRender(stopId, tbodyId, key) {
+  const tbody = document.getElementById(tbodyId);
+  const res = await fetch(`${BASE}?stop_id=${stopId}`, {
+    headers: { "x-api-key": key, "accept": "application/json" }
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for stop ${stopId}`);
+  const data = await res.json();
+  const deps = (data.departures || []).slice(0, MAX_ROWS);
+
+  if (deps.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" class="msg">No departures right now.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = deps.map(dep => {
+    const times = dep.departure || {};
+    const m = minutesUntil(times.expected || times.aimed);
+    const minsText = m === null ? "--" : (m === 0 ? "Due" : m);
+    const isLive = !!times.expected;
+    const route = String(dep.service_id != null ? dep.service_id : "?");
+    const dest = (dep.destination && dep.destination.name) || "Unknown";
+    return `<tr>
+      <td><span class="route" style="${routeStyle(route)}">${esc(route)}</span></td>
+      <td class="dest">${esc(dest)}</td>
+      <td class="mins${isLive ? " live" : ""}">${minsText}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* Fetch all three stops in parallel, update footer timestamp. */
+async function refresh() {
+  const key = getKey();
+  if (!key) { document.getElementById("keygate").classList.add("show"); return; }
+
+  try {
+    await Promise.all(
+      Object.entries(STOPS).map(([stopId, tbodyId]) =>
+        fetchAndRender(stopId, tbodyId, key)
+      )
+    );
+    const now = new Date();
+    const pad = n => String(n).padStart(2, "0");
+    document.getElementById("lastUpdated").textContent =
+      `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  } catch (err) {
+    ["rowsA","rowsB","rowsC"].forEach(id => {
+      document.getElementById(id).innerHTML =
+        `<tr><td colspan="3" class="msg error">Error: ${esc(err.message)}</td></tr>`;
+    });
+  }
+}
+
+/* Countdown timer in the footer. Resets to REFRESH_SECONDS after each fetch. */
+let remaining = REFRESH_SECONDS;
+const countdownEl = document.getElementById("countdown");
+setInterval(() => {
+  remaining = Math.max(0, remaining - 1);
+  countdownEl.textContent = remaining;
+  if (remaining === 0) remaining = REFRESH_SECONDS;
+}, 1000);
+
+/* Save a key entered in the overlay. */
+document.getElementById("keysave").addEventListener("click", () => {
+  const v = document.getElementById("keyinput").value.trim();
+  if (!v) return;
+  localStorage.setItem("metlink_api_key", v);
+  document.getElementById("keygate").classList.remove("show");
+  refresh();
+});
+
+
+/* ---- Analogue + digital clock ---- */
+(function () {
+  const canvas  = document.getElementById("analogueClock");
+  const digital = document.getElementById("digitalClock");
+  const ctx     = canvas.getContext("2d");
+  const R = 45;
+  const cx = R, cy = R;
+
+  const FACE_BG    = "#0a0a0a";
+  const RIM        = "#69AAE2";
+  const TICK_MAJOR = "#69AAE2";
+  const TICK_MINOR = "#14283b";
+  const HAND_H     = "#e8eefc";
+  const HAND_M     = "#e8eefc";
+  const HAND_S     = "#9FD4FF";
+  const CENTER_DOT = "#69AAE2";
+
+  function drawHand(angle, length, width, color) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(angle) * length, cy + Math.sin(angle) * length);
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = width;
+    ctx.lineCap     = "round";
+    ctx.stroke();
+  }
+
+  function drawClock() {
+    const now = new Date();
+    const h = now.getHours() % 12;
+    const m = now.getMinutes();
+    const s = now.getSeconds();
+    const ms = now.getMilliseconds();
+
+    const sAngle = ((s + ms / 1000) / 60) * Math.PI * 2 - Math.PI / 2;
+    const mAngle = ((m + s / 60) / 60) * Math.PI * 2 - Math.PI / 2;
+    const hAngle = ((h + m / 60) / 12) * Math.PI * 2 - Math.PI / 2;
+
+    ctx.clearRect(0, 0, 90, 90);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, R - 1, 0, Math.PI * 2);
+    ctx.fillStyle = FACE_BG;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, R - 1, 0, Math.PI * 2);
+    ctx.strokeStyle = RIM;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    for (let i = 0; i < 60; i++) {
+      const angle = (i / 60) * Math.PI * 2;
+      const isMaj = i % 5 === 0;
+      const outer = R - 3;
+      const inner = isMaj ? R - 11 : R - 7;
       ctx.beginPath();
-      ctx.arc(cx, cy, R - 1, 0, Math.PI * 2);
-      ctx.fillStyle = FACE_BG;
-      ctx.fill();
-
-      // rim
-      ctx.beginPath();
-      ctx.arc(cx, cy, R - 1, 0, Math.PI * 2);
-      ctx.strokeStyle = RIM;
-      ctx.lineWidth = 2;
+      ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
+      ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
+      ctx.strokeStyle = isMaj ? TICK_MAJOR : TICK_MINOR;
+      ctx.lineWidth   = isMaj ? 2 : 1;
       ctx.stroke();
-
-      // tick marks
-      for (let i = 0; i < 60; i++) {
-        const angle  = (i / 60) * Math.PI * 2;
-        const isMaj  = i % 5 === 0;
-        const outer  = R - 3;
-        const inner  = isMaj ? R - 11 : R - 7;
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
-        ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
-        ctx.strokeStyle = isMaj ? TICK_MAJOR : TICK_MINOR;
-        ctx.lineWidth   = isMaj ? 2 : 1;
-        ctx.stroke();
-      }
-
-      // hour hand
-      drawHand(hAngle, R * 0.5, 3, HAND_H);
-      // minute hand
-      drawHand(mAngle, R * 0.72, 2, HAND_M);
-      // second hand
-      drawHand(sAngle, R * 0.80, 1, HAND_S);
-      // tail of second hand
-      drawHand(sAngle + Math.PI, R * 0.2, 1, HAND_S);
-
-      // centre dot
-      ctx.beginPath();
-      ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-      ctx.fillStyle = CENTER_DOT;
-      ctx.fill();
-
-      // digital readout
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(m).padStart(2, '0');
-      const ss = String(s).padStart(2, '0');
-      digital.textContent = `${hh}:${mm}:${ss}`;
     }
 
-    function drawHand(angle, length, width, color) {
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(angle) * length, cy + Math.sin(angle) * length);
-      ctx.strokeStyle = color;
-      ctx.lineWidth   = width;
-      ctx.lineCap     = 'round';
-      ctx.stroke();
-    }
+    drawHand(hAngle, R * 0.5,  3, HAND_H);
+    drawHand(mAngle, R * 0.72, 2, HAND_M);
+    drawHand(sAngle, R * 0.80, 1, HAND_S);
+    drawHand(sAngle + Math.PI, R * 0.2, 1, HAND_S);
 
-    drawClock();
-    setInterval(drawClock, 1000);
-  })();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = CENTER_DOT;
+    ctx.fill();
 
-  // Footer: stamp the load time and count down to the next meta-refresh (30s).
-  (function () {
-    const REFRESH_SECS = 30;
-    const loadTime = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(m).padStart(2, "0");
+    const ss = String(s).padStart(2, "0");
+    digital.textContent = `${hh}:${mm}:${ss}`;
+  }
 
-    function pad(n) { return String(n).padStart(2, '0'); }
+  drawClock();
+  setInterval(drawClock, 1000);
+})();
 
-    document.getElementById('lastUpdated').textContent =
-      `${pad(loadTime.getHours())}:${pad(loadTime.getMinutes())}:${pad(loadTime.getSeconds())}`;
 
-    let remaining = REFRESH_SECS;
-    const countdownEl = document.getElementById('countdown');
-    countdownEl.textContent = remaining;
-
-    setInterval(function () {
-      remaining = Math.max(0, remaining - 1);
-      countdownEl.textContent = remaining;
-    }, 1000);
-  })();
+/* Kick everything off. */
+refresh();
+setInterval(refresh, REFRESH_SECONDS * 1000);
 </script>
 </body>
 </html>
