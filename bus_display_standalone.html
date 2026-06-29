@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kilbirnie Bus Departures</title>
-
 <!-- Montserrat is the school's heading font. Falls back to a system sans-serif offline. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,12 +61,12 @@
   /* Key-entry overlay shown when no API key is set yet. */
   #keygate {
     position: fixed; inset: 0; background: #000; display: none;
-    flex-direction: column; align-items: center; justify-content: center;
-    gap: 1.2em; padding: var(--pad-x); text-align: center;
+    flex-direction: column; align-items: center;
+    justify-content: center; gap: 1.2em; padding: var(--pad-x); text-align: center;
   }
   #keygate.show { display: flex; }
   #keygate h2 { color: #69AAE2; font-size: clamp(18px, 4vh, 32px); }
-  #keygate p { color: #7FA8C9; max-width: 36em; font-size: clamp(13px, 2.2vh, 18px); line-height: 1.5; }
+  #keygate p  { color: #7FA8C9; max-width: 36em; font-size: clamp(13px, 2.2vh, 18px); line-height: 1.5; }
   #keygate input {
     width: min(90vw, 30em); padding: 0.7em 1em; font-size: 16px;
     border-radius: 8px; border: 2px solid #69AAE2; background: #061522; color: #fff;
@@ -99,7 +98,7 @@
 <body>
 
   <header>
-    <h1>KILBIRNIE DEPARTURES</h1>
+    <h1>KILBIRNIE DEPATURES</h1>
     <div class="clock" id="clock">--:--:--</div>
   </header>
 
@@ -132,12 +131,12 @@
 /* OPTION 1: paste your key between the quotes below and you're done.
    OPTION 2: leave it blank — the page will ask for it and remember it
    in this browser. Either way, keep this file private (the key is in it). */
-const API_KEY = "";
+const API_KEY = "Ej9kJpRHSk39jUOo4oZKARQCbHMNHwX4UP2EXtU4";
 
-/* Our three Kilbirnie stops. The label is just for our display. */
+/* Our three Kilbiroie stops. The label is just for our display. */
 const STOPS = {
   "6224": "Kilbirnie - Stop A",
-  "7224": "Kilbirnie - Stop B",
+  "7224": "Kilbiroie - Stop B",
   "7026": "Kilbirnie - Stop C"
 };
 
@@ -233,7 +232,7 @@ async function refresh() {
     tbody.innerHTML = `<tr><td colspan="4" class="msg error">
       Could not load departures: ${esc(err.message)}.<br>
       If this says "Failed to fetch", Metlink may be blocking direct browser
-      requests (CORS) — in that case the Python version is the way to go.
+      requests (CORS) -- in that case the Python version is the way to go.
     </td></tr>`;
   }
 }
