@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<!-- Tells phones/tablets to use their real screen width instead of pretending
-     to be a ~980px desktop. Without this the mobile layout never kicks in. -->
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Kiosk mode: fix viewport to 1280px so AirPlay/screen-mirroring from a
+     phone doesn't trigger mobile breakpoints. The TV sees a desktop layout. -->
+<meta name="viewport" content="width=1280, initial-scale=1, user-scalable=no">
 <!-- This line tells the browser to reload the page automatically. -->
 <meta http-equiv="refresh" content="30">
 <!-- Montserrat is the school's heading font (loaded from Google Fonts).
@@ -87,28 +87,8 @@
     font-size: clamp(10px, 1.8vh, 17px); color: #5e83a3;
     border-top: 1px solid #14283b;
   }
-  /* Tablets and phones: stack the three stop panels into a single column. */
-  @media (max-width: 900px) {
-    .board { grid-template-columns: 1fr; }
-  }
-  @media (max-width: 600px) {
-    header { flex-direction: column; align-items: flex-start; }
-    .route { width: 2em; height: 2em; }
-  }
-  /* iPhone (and similar) in portrait, ~375-430px wide. The fluid sizes above
-     key off screen HEIGHT, and a phone in portrait is very tall, so text would
-     balloon. Here we pin fixed, sensible sizes and trim spacing so the three
-     columns fit with no sideways scrolling, and long names wrap cleanly. */
-  @media (max-width: 430px) {
-    :root { --pad-x: 12px; }
-    h1 { font-size: 21px; letter-spacing: 1px; }
-    .clock { font-size: 15px; }
-    th { font-size: 10px; }
-    td { font-size: 18px; }
-    .route { width: 1.9em; height: 1.9em; }
-    .dest { word-break: break-word; }
-    .mins { font-size: 18px; }
-  }
+  /* Kiosk display: always 3 columns, no mobile overrides.
+     Viewport is pinned to 1280px so breakpoints below never fire via AirPlay. */
 </style>
 </head>
 <body>
@@ -124,7 +104,7 @@
 <section class="stoppanel"><h2 class="stopname">Kilbirnie - Stop B</h2><table><thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead><tbody><tr><td><span class="route" style="background:#005EB8;color:#FFFFFF;border:none">2</span></td><td class="dest">Karori</td><td class="mins live">5</td></tr><tr><td><span class="route" style="background:#8DC8E8;color:#FFFFFF;border:none">AX</span></td><td class="dest">Wellington Station</td><td class="mins live">8</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">14</span></td><td class="dest">Wilton</td><td class="mins">12</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">24</span></td><td class="dest">Johnsonville</td><td class="mins">17</td></tr><tr><td><span class="route" style="background:transparent;color:#636466;border:0.13em solid #636466">36</span></td><td class="dest">Wellington Station</td><td class="mins live">20</td></tr></tbody></table></section>
 <section class="stoppanel"><h2 class="stopname">Kilbirnie - Stop C</h2><table><thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead><tbody><tr><td><span class="route" style="background:#BF5403;color:#FFFFFF;border:none">4</span></td><td class="dest">Mairangi</td><td class="mins live">4</td></tr><tr><td><span class="route" style="background:#5E9732;color:#FFFFFF;border:none">3</span></td><td class="dest">Wellington Station</td><td class="mins live">8</td></tr><tr><td><span class="route" style="background:transparent;color:#308AD9;border:0.13em solid #308AD9">18</span></td><td class="dest">Karori</td><td class="mins live">22</td></tr></tbody></table></section>
   </div>
-  <footer>* = live (real-time) &nbsp;&middot;&nbsp; Updated 05:00:14 &nbsp;&middot;&nbsp; Data: Metlink / Greater Wellington Regional Council (CC BY 4.0)</footer>
+  <footer>* = live (real-time) &nbsp;&middot;&nbsp; Updated <span id="lastUpdated">--:--:--</span> &nbsp;&middot;&nbsp; Next refresh in <span id="countdown">30</span>s &nbsp;&middot;&nbsp; Data: Metlink / Greater Wellington Regional Council (CC BY 4.0)</footer>
 <script>
   (function () {
     const canvas  = document.getElementById('analogueClock');
@@ -217,6 +197,26 @@
 
     drawClock();
     setInterval(drawClock, 1000);
+  })();
+
+  // Footer: stamp the load time and count down to the next meta-refresh (30s).
+  (function () {
+    const REFRESH_SECS = 30;
+    const loadTime = new Date();
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    document.getElementById('lastUpdated').textContent =
+      `${pad(loadTime.getHours())}:${pad(loadTime.getMinutes())}:${pad(loadTime.getSeconds())}`;
+
+    let remaining = REFRESH_SECS;
+    const countdownEl = document.getElementById('countdown');
+    countdownEl.textContent = remaining;
+
+    setInterval(function () {
+      remaining = Math.max(0, remaining - 1);
+      countdownEl.textContent = remaining;
+    }, 1000);
   })();
 </script>
 </body>
