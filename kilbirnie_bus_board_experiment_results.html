@@ -207,6 +207,15 @@
       color: #aaa;
     }
 
+    /* ── Refresh note ── */
+    .refresh-note {
+      text-align: center;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.72rem;
+      color: #ccc;
+      margin-bottom: 30px;
+    }
+
     /* ── Back link ── */
     .back-wrap {
       text-align: center;
@@ -400,108 +409,133 @@
       return { counts: SNAPSHOT.counts, total: SNAPSHOT.total, live: false };
     }
 
-    async function loadAndRender() {
-      const main = document.getElementById('main-content');
+    // ── Auto-refresh every 60 seconds ────────────────────────────────
+    const REFRESH_MS = 60000;
+    let   chartInstance = null;
+
+    async function refresh() {
       try {
         const { counts, total, live } = await fetchData();
-
         const labels  = Object.keys(counts);
         const values  = labels.map(l => counts[l]);
         const colours = labels.map((l, i) => COLOURS[l] || COLOUR_FALLBACKS[i % COLOUR_FALLBACKS.length]);
 
-        // ── Build HTML ────────────────────────────────────────────
-        main.innerHTML = `
-          <p class="question-title">What do you think of the bus board?</p>
+        if (!chartInstance) {
+          // ── First load: build the page structure ─────────────────
+          document.getElementById('main-content').innerHTML = `
+            <p class="question-title">What do you think of the bus board?</p>
 
-          <div class="tally">
-            <div class="tally-badge">
-              <span>Total responses</span>
-              <span class="tally-number">${total}</span>
-            </div>
-          </div>
-
-          <div class="chart-wrap">
-            <div class="chart-canvas-wrap">
-              <canvas id="pie-chart"></canvas>
-            </div>
-            <div class="legend" id="legend"></div>
-          </div>
-
-          <div class="commentary">
-            <div class="commentary-label">Commentary</div>
-            <p class="commentary-text" id="commentary-text"></p>
-          </div>
-
-          ${!live ? `<p style="text-align:center;font-family:'Montserrat',sans-serif;font-size:0.72rem;color:#ccc;margin-bottom:30px">Showing sample data · publish the Google Sheet to web for live results</p>` : ''}
-
-          <div class="back-wrap">
-            <a class="back-link" href="index.html">← Back to project</a>
-          </div>
-        `;
-
-        // ── Legend ────────────────────────────────────────────────
-        const legendEl = document.getElementById('legend');
-        labels.forEach((label, i) => {
-          const pct = Math.round((values[i] / total) * 100);
-          legendEl.innerHTML += `
-            <div class="legend-item">
-              <div class="legend-dot" style="background:${colours[i]}"></div>
-              <div>
-                <div class="legend-label">${label}</div>
-                <div class="legend-pct">${pct}% <span class="legend-count">(${values[i]} vote${values[i] === 1 ? '' : 's'})</span></div>
+            <div class="tally">
+              <div class="tally-badge">
+                <span>Total responses</span>
+                <span class="tally-number" id="tally-num">${total}</span>
               </div>
             </div>
-          `;
-        });
 
-        // ── Pie chart ─────────────────────────────────────────────
-        const ctx = document.getElementById('pie-chart').getContext('2d');
-        new Chart(ctx, {
-          type: 'pie',
-          data: {
-            labels,
-            datasets: [{
-              data: values,
-              backgroundColor: colours,
-              borderColor: '#ffffff',
-              borderWidth: 3,
-              hoverOffset: 8
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  label: ctx => {
-                    const pct = Math.round((ctx.parsed / total) * 100);
-                    return ` ${ctx.label}: ${pct}% (${ctx.parsed})`;
+            <div class="chart-wrap">
+              <div class="chart-canvas-wrap">
+                <canvas id="pie-chart"></canvas>
+              </div>
+              <div class="legend" id="legend"></div>
+            </div>
+
+            <div class="commentary">
+              <div class="commentary-label">Commentary</div>
+              <p class="commentary-text" id="commentary-text"></p>
+            </div>
+
+            ${!live ? `<p style="text-align:center;font-family:'Montserrat',sans-serif;font-size:0.72rem;color:#ccc;margin-bottom:16px">Showing sample data · publish the Google Sheet to web for live results</p>` : ''}
+
+            <p class="refresh-note" id="refresh-note"></p>
+
+            <div class="back-wrap">
+              <a class="back-link" href="index.html">← Back to project</a>
+            </div>
+          `;
+
+          // Build legend
+          buildLegend(labels, values, colours, total);
+
+          // Create chart
+          const ctx = document.getElementById('pie-chart').getContext('2d');
+          chartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+              labels,
+              datasets: [{
+                data: values,
+                backgroundColor: colours,
+                borderColor: '#ffffff',
+                borderWidth: 3,
+                hoverOffset: 8
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: ctx => {
+                      const pct = Math.round((ctx.parsed / total) * 100);
+                      return ` ${ctx.label}: ${pct}% (${ctx.parsed})`;
+                    }
                   }
                 }
               }
             }
-          }
-        });
+          });
 
-        // ── Commentary ────────────────────────────────────────────
+        } else {
+          // ── Subsequent refresh: update existing chart ─────────────
+          chartInstance.data.labels              = labels;
+          chartInstance.data.datasets[0].data    = values;
+          chartInstance.data.datasets[0].backgroundColor = colours;
+          chartInstance.update();
+          buildLegend(labels, values, colours, total);
+          document.getElementById('tally-num').textContent = total;
+        }
+
         document.getElementById('commentary-text').innerHTML = buildCommentary(counts, total);
+        document.getElementById('refresh-note').textContent  =
+          `Last updated ${new Date().toLocaleTimeString()} · refreshes every 60 s`;
 
       } catch (err) {
-        main.innerHTML = `
-          <div class="status-msg">
-            Could not load results — please try refreshing the page.<br>
-            <small style="color:#ccc;margin-top:8px;display:block">${err.message}</small>
-          </div>
-          <div class="back-wrap" style="margin-top:30px">
-            <a class="back-link" href="index.html">← Back to project</a>
-          </div>
-        `;
+        if (!chartInstance) {
+          document.getElementById('main-content').innerHTML = `
+            <div class="status-msg">
+              Could not load results — please try refreshing the page.<br>
+              <small style="color:#ccc;margin-top:8px;display:block">${err.message}</small>
+            </div>
+            <div class="back-wrap" style="margin-top:30px">
+              <a class="back-link" href="index.html">← Back to project</a>
+            </div>
+          `;
+        }
+        // If chart already visible, keep it — just skip this refresh silently
       }
     }
 
-    loadAndRender();
+    function buildLegend(labels, values, colours, total) {
+      const legendEl = document.getElementById('legend');
+      legendEl.innerHTML = '';
+      labels.forEach((label, i) => {
+        const pct = Math.round((values[i] / total) * 100);
+        legendEl.innerHTML += `
+          <div class="legend-item">
+            <div class="legend-dot" style="background:${colours[i]}"></div>
+            <div>
+              <div class="legend-label">${label}</div>
+              <div class="legend-pct">${pct}% <span class="legend-count">(${values[i]} vote${values[i] === 1 ? '' : 's'})</span></div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    refresh();
+    setInterval(refresh, REFRESH_MS);
   </script>
 
 </body>
