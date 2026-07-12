@@ -273,6 +273,26 @@ function minutesUntil(ts) {
   return Math.max(0, Math.round((when - new Date()) / 60000));
 }
 
+/* Format a clock time like "8:43PM" from a timestamp. */
+function formatTimeOfDay(ts) {
+  const d = new Date(ts);
+  let h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${String(m).padStart(2, "0")}${ampm}`;
+}
+
+/* Departures <= 60 min away show a countdown ("Due" / "Xmin").
+   Departures more than an hour away show the scheduled clock time (e.g. "8:43PM"). */
+function formatDeparture(m, ts) {
+  if (m === null) return "--";
+  if (m === 0) return "Due";
+  if (m <= 60) return `${m}min`;
+  return formatTimeOfDay(ts);
+}
+
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
@@ -315,8 +335,9 @@ function renderRows(tbodyId) {
   } else {
     tbody.innerHTML = visible.map(dep => {
       const times    = dep.departure || {};
-      const m        = minutesUntil(times.expected || times.aimed);
-      const minsText = m === null ? "--" : (m === 0 ? "Due" : m);
+      const ts       = times.expected || times.aimed;
+      const m        = minutesUntil(ts);
+      const minsText = formatDeparture(m, ts);
       const isLive   = !!times.expected;
       const route    = String(dep.service_id != null ? dep.service_id : "?");
       const dest     = (dep.destination && dep.destination.name) || "Unknown";
