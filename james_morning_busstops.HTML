@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Responsive viewport for smartphone support.
+     On the Raspberry Pi kiosk, Chromium runs at a fixed window size (1280px+)
+     so device-width resolves to the full screen and the desktop layout applies. -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+<title>James Morning Bus Departures</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --pad-x: clamp(14px, 4vw, 64px); }
+  html, body { height: 100%; }
+  body {
+    background: #000000;
+    color: #e8eefc;
+    font-family: "Montserrat", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 0.4em;
+    padding: clamp(10px, 3vh, 32px) var(--pad-x) clamp(6px, 2vh, 20px);
+    border-bottom: 3px solid #69AAE2;
+  }
+  h1 { font-size: clamp(20px, 4.2vh, 46px); letter-spacing: 2px; color: #69AAE2; }
+  .clock {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    flex-shrink: 0;
+  }
+  .clock canvas { display: block; }
+  .clock-digital {
+    font-size: clamp(12px, 1.8vh, 16px);
+    color: #7FA8C9;
+    letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Default layout: 2 side-by-side panels (desktop + kiosk + tablet) ---- */
+  .board {
+    flex: 1; overflow: auto;
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: clamp(12px, 2vw, 30px);
+    padding: clamp(10px, 2vh, 22px) var(--pad-x);
+    align-content: start;
+  }
+  .stoppanel { min-width: 0; }
+  .stopname {
+    color: #69AAE2; font-size: clamp(15px, 2.6vh, 24px);
+    letter-spacing: 1px; padding-bottom: 0.3em; margin-bottom: 0.2em;
+    border-bottom: 2px solid #14283b;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: clamp(10px, 1.6vh, 15px); color: #5e83a3;
+    text-transform: uppercase; letter-spacing: 1px;
+    padding: 0.5em clamp(6px, 0.8vw, 14px); border-bottom: 1px solid #14283b;
+  }
+  td {
+    padding: clamp(7px, 1.4vh, 14px) clamp(6px, 0.8vw, 14px);
+    font-size: clamp(15px, 2.4vh, 30px); border-bottom: 1px solid #14283b;
+    vertical-align: middle;
+  }
+  .route {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 2.2em; height: 2.2em; box-sizing: border-box; padding: 0.1em;
+    background: #69AAE2; color: #000000; font-weight: bold;
+    border-radius: 50%;
+    font-size: 0.82em; line-height: 1;
+  }
+  .dest { color: #e8eefc; }
+  .mins { text-align: right; font-weight: bold; color: #9FD4FF; white-space: nowrap; }
+  .live::after {
+    content: "*"; color: #9FD4FF; margin-left: 0.3em; font-size: 0.6em;
+    vertical-align: super;
+  }
+  .msg { padding: 2em 0; color: #7FA8C9; font-size: clamp(13px, 1.8vh, 18px); }
+  .msg.error { color: #ff8a8a; }
+  footer {
+    padding: clamp(8px, 1.4vh, 16px) var(--pad-x);
+    font-size: clamp(10px, 1.8vh, 17px); color: #5e83a3;
+    border-top: 1px solid #14283b;
+  }
+
+  /* Accordion toggle button — hidden by default, shown only in portrait */
+  .accordion-btn {
+    display: none;
+    width: 100%;
+    margin-top: 6px;
+    padding: 0.55em 1em;
+    background: transparent;
+    color: #69AAE2;
+    border: 1px solid #14283b;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s;
+  }
+  .accordion-btn:hover { background: #0d1f2f; }
+
+  /* Key-entry overlay */
+  #keygate {
+    position: fixed; inset: 0; background: #000;
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1.2em; padding: var(--pad-x); text-align: center;
+  }
+  #keygate.show { display: flex; }
+  #keygate h2 { color: #69AAE2; font-size: clamp(18px, 4vh, 32px); }
+  #keygate p  { color: #7FA8C9; max-width: 36em; font-size: clamp(13px, 2.2vh, 18px); line-height: 1.5; }
+  #keygate input {
+    width: min(90vw, 30em); padding: 0.7em 1em; font-size: 16px;
+    border-radius: 8px; border: 2px solid #69AAE2; background: #061522;
+    color: #fff; font-family: inherit;
+  }
+  #keygate button {
+    padding: 0.6em 1.6em; font-size: 16px; font-weight: bold; cursor: pointer;
+    border: none; border-radius: 8px; background: #69AAE2;
+    color: #04243d; font-family: inherit;
+  }
+
+  /* ================================================================
+     SMARTPHONE LANDSCAPE
+     Triggered when the screen is short (phone held sideways).
+     Keeps 2 columns but scales everything down and allows scrolling.
+     ================================================================ */
+  @media screen and (max-height: 500px) and (orientation: landscape) {
+    :root { --pad-x: 10px; }
+    header {
+      padding: 5px var(--pad-x) 4px;
+      border-bottom-width: 2px;
+    }
+    h1 { font-size: 15px; letter-spacing: 0.5px; }
+    .clock canvas { width: 44px; height: 44px; }
+    .clock-digital { font-size: 10px; letter-spacing: 1px; }
+    .board {
+      /* Keep 2 columns; allow content to extend below the fold */
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      padding: 6px var(--pad-x);
+      overflow-y: auto;
+      align-content: start;
+      flex: none;       /* don't stretch to fill; scroll instead */
+    }
+    .stopname { font-size: 12px; padding-bottom: 0.15em; margin-bottom: 0.1em; }
+    th { font-size: 9px; padding: 3px clamp(3px, 0.6vw, 8px); letter-spacing: 0; }
+    td { font-size: 13px; padding: 4px clamp(3px, 0.6vw, 8px); }
+    .route { width: 2em; height: 2em; font-size: 0.75em; }
+    footer { font-size: 9px; padding: 3px var(--pad-x); }
+  }
+
+  /* ================================================================
+     SMARTPHONE PORTRAIT
+     Single-column stacked layout. Accordion limits rows to 5 per stop.
+     ================================================================ */
+  @media screen and (max-width: 500px) and (orientation: portrait) {
+    :root { --pad-x: 14px; }
+    header {
+      padding: 12px var(--pad-x) 10px;
+    }
+    h1 { font-size: 18px; letter-spacing: 1px; }
+    .clock canvas { width: 52px; height: 52px; }
+    .clock-digital { font-size: 11px; }
+    .board {
+      grid-template-columns: 1fr;  /* stack stops vertically */
+      gap: 18px;
+      padding: 12px var(--pad-x);
+      overflow-y: auto;
+      flex: 1;
+    }
+    .stopname { font-size: 16px; }
+    th { font-size: 11px; padding: 5px clamp(4px, 1vw, 10px); }
+    td { font-size: 16px; padding: 8px clamp(4px, 1vw, 10px); }
+    .route { width: 2em; height: 2em; font-size: 0.78em; }
+    footer { font-size: 10px; padding: 6px var(--pad-x); }
+
+    /* Show accordion buttons in portrait */
+    .accordion-btn { display: block; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>JAMES MORNING<br>BUS DEPARTURES</h1>
+    <div class="clock">
+      <canvas id="analogueClock" width="90" height="90"></canvas>
+      <span class="clock-digital" id="digitalClock">00:00:00</span>
+    </div>
+  </header>
+
+  <div class="board">
+    <section class="stoppanel">
+      <h2 class="stopname">Marine PDE</h2>
+      <table>
+        <thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead>
+        <tbody id="rowsA"><tr><td colspan="3" class="msg">Loading…</td></tr></tbody>
+      </table>
+      <button class="accordion-btn" id="toggleA">Show more</button>
+    </section>
+    <section class="stoppanel">
+      <h2 class="stopname">Cafe Polo</h2>
+      <table>
+        <thead><tr><th>Route</th><th>Destination</th><th style="text-align:right">Min</th></tr></thead>
+        <tbody id="rowsB"><tr><td colspan="3" class="msg">Loading…</td></tr></tbody>
+      </table>
+      <button class="accordion-btn" id="toggleB">Show more</button>
+    </section>
+  </div>
+
+  <footer>* = live (real-time) &nbsp;&middot;&nbsp; Updated <span id="lastUpdated">--:--:--</span> &nbsp;&middot;&nbsp; Next refresh in <span id="countdown">30</span>s &nbsp;&middot;&nbsp; Data: Metlink / Greater Wellington Regional Council (CC BY 4.0)</footer>
+
+  <div id="keygate">
+    <h2>Enter your Metlink API key</h2>
+    <p>Get a free key from opendata.metlink.org.nz — it's on your dashboard after you log in.
+       It is stored only in this browser on this device.</p>
+    <input id="keyinput" type="text" placeholder="paste your API key here" autocomplete="off">
+    <button id="keysave">Save &amp; start</button>
+  </div>
+
+<script>
+"use strict";
+
+/* ============================ CONFIG ============================ */
+const API_KEY = "Ej9kJpRHSk39jUOo4oZKARQCbHMNHwX4VP2EZzU4";
+
+const STOPS = {
+  "7062": "rowsA",
+  "7237": "rowsB"
+};
+
+/* Toggle button IDs matching each tbody */
+const TOGGLE_IDS = {
+  "rowsA": "toggleA",
+  "rowsB": "toggleB"
+};
+
+const REFRESH_SECONDS  = 30;
+const MAX_ROWS         = 99;   /* fetch all departures; portrait collapses to PORTRAIT_LIMIT */
+const PORTRAIT_LIMIT   = 5;    /* rows shown in portrait before "show all" */
+const BASE = "https://api.opendata.metlink.org.nz/v1/stop-predictions";
+/* ================================================================ */
+
+
+/* Full departures array stored here after each fetch, keyed by tbodyId. */
+const allDeps = {};
+
+/* Expanded state per stop (portrait accordion). */
+const expanded = { rowsA: false, rowsB: false };
+
+/* True when the viewport matches the portrait phone breakpoint. */
+const portraitMQ = window.matchMedia(
+  "screen and (max-width: 500px) and (orientation: portrait)"
+);
+function isPortrait() { return portraitMQ.matches; }
+
+
+function getKey() {
+  return API_KEY || localStorage.getItem("metlink_api_key") || "";
+}
+
+function minutesUntil(ts) {
+  if (!ts) return null;
+  const when = new Date(ts);
+  if (isNaN(when)) return null;
+  return Math.max(0, Math.round((when - new Date()) / 60000));
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+}
+
+function routeStyle(route) {
+  const solid = {
+    "2":  "background:#005EB8;color:#FFFFFF;border:none",
+    "3":  "background:#5E9732;color:#FFFFFF;border:none",
+    "4":  "background:#BF5403;color:#FFFFFF;border:none",
+    "AX": "background:#8DC8E8;color:#000000;border:none"
+  };
+  const outlined = {
+    "14": "background:transparent;color:#308AD9;border:0.13em solid #308AD9",
+    "18": "background:transparent;color:#308AD9;border:0.13em solid #308AD9",
+    "21": "background:transparent;color:#308AD9;border:0.13em solid #308AD9",
+    "24": "background:transparent;color:#308AD9;border:0.13em solid #308AD9",
+    "36": "background:transparent;color:#636466;border:0.13em solid #636466",
+    "38x":"background:transparent;color:#636466;border:0.13em solid #636466"
+  };
+  return solid[route] || outlined[route] ||
+    "background:transparent;color:#7FA8C9;border:0.13em solid #7FA8C9";
+}
+
+/* Render the rows for one stop panel using stored data.
+   In portrait, respects the per-stop expanded state and updates the button. */
+function renderRows(tbodyId) {
+  const deps = allDeps[tbodyId];
+  if (!deps) return;
+
+  const portrait = isPortrait();
+  const showAll  = !portrait || expanded[tbodyId];
+  const visible  = showAll ? deps : deps.slice(0, PORTRAIT_LIMIT);
+
+  const tbody = document.getElementById(tbodyId);
+
+  if (deps.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" class="msg">No departures right now.</td></tr>';
+  } else {
+    tbody.innerHTML = visible.map(dep => {
+      const times    = dep.departure || {};
+      const m        = minutesUntil(times.expected || times.aimed);
+      const minsText = m === null ? "--" : (m === 0 ? "Due" : m);
+      const isLive   = !!times.expected;
+      const route    = String(dep.service_id != null ? dep.service_id : "?");
+      const dest     = (dep.destination && dep.destination.name) || "Unknown";
+      return `<tr>
+        <td><span class="route" style="${routeStyle(route)}">${esc(route)}</span></td>
+        <td class="dest">${esc(dest)}</td>
+        <td class="mins${isLive ? " live" : ""}">${minsText}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  /* Update the accordion toggle button */
+  const btn = document.getElementById(TOGGLE_IDS[tbodyId]);
+  if (btn) {
+    /* Button is CSS-hidden in non-portrait via display:none; only show when needed */
+    if (portrait && deps.length > PORTRAIT_LIMIT) {
+      btn.style.removeProperty("display"); /* let CSS decide (block in portrait MQ) */
+      btn.textContent = expanded[tbodyId]
+        ? "Show fewer"
+        : "Show more";
+    } else {
+      btn.style.display = "none";
+    }
+  }
+}
+
+/* Toggle accordion for one stop. */
+function toggleExpand(tbodyId) {
+  expanded[tbodyId] = !expanded[tbodyId];
+  renderRows(tbodyId);
+}
+
+/* Wire up accordion buttons. */
+Object.keys(TOGGLE_IDS).forEach(tbodyId => {
+  const btn = document.getElementById(TOGGLE_IDS[tbodyId]);
+  if (btn) btn.addEventListener("click", () => toggleExpand(tbodyId));
+});
+
+/* Fetch one stop, store deps, then render. */
+async function fetchAndRender(stopId, tbodyId, key) {
+  const res = await fetch(`${BASE}?stop_id=${stopId}`, {
+    headers: { "x-api-key": key, "accept": "application/json" }
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for stop ${stopId}`);
+  const data = await res.json();
+  allDeps[tbodyId] = (data.departures || []).slice(0, MAX_ROWS);
+  renderRows(tbodyId);
+}
+
+/* Fetch all stops in parallel, update footer timestamp. */
+async function refresh() {
+  const key = getKey();
+  if (!key) { document.getElementById("keygate").classList.add("show"); return; }
+
+  try {
+    await Promise.all(
+      Object.entries(STOPS).map(([stopId, tbodyId]) =>
+        fetchAndRender(stopId, tbodyId, key)
+      )
+    );
+    const now = new Date();
+    const pad = n => String(n).padStart(2, "0");
+    document.getElementById("lastUpdated").textContent =
+      `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  } catch (err) {
+    ["rowsA","rowsB"].forEach(id => {
+      document.getElementById(id).innerHTML =
+        `<tr><td colspan="3" class="msg error">Error: ${esc(err.message)}</td></tr>`;
+    });
+  }
+}
+
+/* Re-render on orientation change (no re-fetch needed — data is cached). */
+let resizeTimer;
+function onOrientationChange() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    Object.values(STOPS).forEach(tbodyId => {
+      if (allDeps[tbodyId]) renderRows(tbodyId);
+    });
+  }, 120); /* short delay lets the viewport finish resizing */
+}
+window.addEventListener("resize", onOrientationChange);
+portraitMQ.addEventListener("change", onOrientationChange);
+
+/* Countdown timer in the footer. */
+let remaining = REFRESH_SECONDS;
+const countdownEl = document.getElementById("countdown");
+setInterval(() => {
+  remaining = Math.max(0, remaining - 1);
+  countdownEl.textContent = remaining;
+  if (remaining === 0) remaining = REFRESH_SECONDS;
+}, 1000);
+
+/* Save a key entered in the overlay. */
+document.getElementById("keysave").addEventListener("click", () => {
+  const v = document.getElementById("keyinput").value.trim();
+  if (!v) return;
+  localStorage.setItem("metlink_api_key", v);
+  document.getElementById("keygate").classList.remove("show");
+  refresh();
+});
+
+
+/* ---- Analogue + digital clock ---- */
+(function () {
+  const canvas  = document.getElementById("analogueClock");
+  const digital = document.getElementById("digitalClock");
+  const ctx     = canvas.getContext("2d");
+  const R = 45;
+  const cx = R, cy = R;
+
+  const FACE_BG    = "#0a0a0a";
+  const RIM        = "#69AAE2";
+  const TICK_MAJOR = "#69AAE2";
+  const TICK_MINOR = "#14283b";
+  const HAND_H     = "#e8eefc";
+  const HAND_M     = "#e8eefc";
+  const HAND_S     = "#9FD4FF";
+  const CENTER_DOT = "#69AAE2";
+
+  function drawHand(angle, length, width, color) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(angle) * length, cy + Math.sin(angle) * length);
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = width;
+    ctx.lineCap     = "round";
+    ctx.stroke();
+  }
+
+  function drawClock() {
+    const now = new Date();
+    const h  = now.getHours() % 12;
+    const m  = now.getMinutes();
+    const s  = now.getSeconds();
+    const ms = now.getMilliseconds();
+
+    const sAngle = ((s + ms / 1000) / 60) * Math.PI * 2 - Math.PI / 2;
+    const mAngle = ((m + s / 60)    / 60) * Math.PI * 2 - Math.PI / 2;
+    const hAngle = ((h + m / 60)    / 12) * Math.PI * 2 - Math.PI / 2;
+
+    ctx.clearRect(0, 0, 90, 90);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, R - 1, 0, Math.PI * 2);
+    ctx.fillStyle = FACE_BG;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, R - 1, 0, Math.PI * 2);
+    ctx.strokeStyle = RIM;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    for (let i = 0; i < 60; i++) {
+      const angle  = (i / 60) * Math.PI * 2;
+      const isMaj  = i % 5 === 0;
+      const outer  = R - 3;
+      const inner  = isMaj ? R - 11 : R - 7;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
+      ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
+      ctx.strokeStyle = isMaj ? TICK_MAJOR : TICK_MINOR;
+      ctx.lineWidth   = isMaj ? 2 : 1;
+      ctx.stroke();
+    }
+
+    drawHand(hAngle, R * 0.5,  3, HAND_H);
+    drawHand(mAngle, R * 0.72, 2, HAND_M);
+    drawHand(sAngle, R * 0.80, 1, HAND_S);
+    drawHand(sAngle + Math.PI, R * 0.2, 1, HAND_S);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = CENTER_DOT;
+    ctx.fill();
+
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(m).padStart(2, "0");
+    const ss = String(s).padStart(2, "0");
+    digital.textContent = `${hh}:${mm}:${ss}`;
+  }
+
+  drawClock();
+  setInterval(drawClock, 1000);
+})();
+
+
+/* Kick everything off. */
+refresh();
+setInterval(refresh, REFRESH_SECONDS * 1000);
+</script>
+</body>
+</html>
